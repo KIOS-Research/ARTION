@@ -1,0 +1,8 @@
+**/__pycache__
+.*
+!/.gitignore
+media
+app/uploads/
+static
+!/web/static/
+artion_backend/env.py

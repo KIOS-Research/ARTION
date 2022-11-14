@@ -1,0 +1,222 @@
+{% extends 'web/base.html' %}
+{% load static %}
+{% block head_block %}
+    <!-- custom css -->
+    <link rel="stylesheet" href="{% static 'style/custom.css' %}">
+    <!-- chat css -->
+    <link rel="stylesheet" href="{% static 'style/chat.css' %}">
+{% endblock %}
+
+{% block body %}
+
+<div class="container">
+<div class="row clearfix">
+    <div class="col-lg-12">
+        <div class="card chat-app">
+            <div id="plist" class="people-list">
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text"><i class="fa fa-search"></i></span>
+                    </div>
+                    <input type="text" class="form-control" placeholder="Search...">
+                </div>
+                <ul class="list-unstyled chat-list mt-2 mb-0">
+                    {% for chat in chat_list %}
+                    <li class="clearfix" onclick="openNewChat('{{ chat.name|safe }}')" id="chat_name_{{ chat.name|safe }}">
+                        <div class="about">
+                            <i class="fas fa-user"></i>
+                            <span class="name">{{ chat.name|safe }}</span>
+                            {% if chat.is_active %}
+                                <div class="status"> <i class="fa fa-circle online"></i> online </div>
+                            {% else %}
+                                <div class="status"> <i class="fa fa-circle offline"></i>offline</div>
+                            {% endif %}
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <div class="chat">
+                <div class="chat-header clearfix">
+                    <div class="row text-center">
+                        <div class="col-12">
+                            <i class="fas fa-user"></i>
+                                <span class="">{{room_name}}</span>
+                            <i class="fa fa-circle offline"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-history overflow-auto chat-height-set" id="chat-history">
+                    <ul class="m-b-0" id="msg-list">
+                        {% for item in msg_list %}
+                        <li class="clearfix">
+                            {% if item.is_sender %}
+                            <div class="message-data text-end">
+                               <span class="message-data-time">{{item.time}}</span>
+                            </div>
+                            <div class="message other-message float-right">{{item.msg|safe}}</div>
+                            {% else %}
+                            <div class="message-data text-start">
+                               <span class="message-data-time">{{item.time}}</span>
+                            </div>
+                            <div class="message other-message float-left">{{item.msg|safe}}</div>
+                            {% endif %}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div class="chat-message clearfix">
+                    <div class="input-group mb-0">
+                        <input id="chat-message-input" type="text" class="form-control" placeholder="Enter text here...">
+                        <img id="preview-img" src="" alt="" style="display: none;" height="100px;">
+                        <button class="btn btn-primary btn-sm btn-file ms-1" disabled>
+                            <i class="fas fa-video"></i>
+                            <input type="file" accept="video/*" id="chat-video">
+                        </button>
+                        <button class="btn btn-primary btn-sm btn-file ms-1" disabled>
+                            <i class="fas fa-image"></i>
+                            <input type="file" accept="image/*" id="chat-image">
+                        </button>
+                        <button class="btn btn-primary btn-sm btn-file ms-1" id="chat-message-submit">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+    {{ room_name|json_script:"room-name" }}
+    <script>
+        console.log('testt');
+        chatElem = document.getElementById('chat-history');
+        chatElem.scrollTop = chatElem.scrollHeight - chatElem.clientHeight;
+        const roomName = JSON.parse(document.getElementById('room-name').textContent);
+        const msgList = document.querySelector('#msg-list');
+        let chatSocket;
+        function socketUrl(chatName){
+            if (location.protocol !== 'https:') {
+                return 'ws://'
+                    + window.location.host
+                    + '/wss/chat/'
+                    + 'user/'
+                    + chatName
+                    + '/';
+            }
+            return 'wss://'
+                + window.location.host
+                + '/wss/chat/'
+                + 'user/'
+                + chatName
+                + '/';
+        }
+        function socketSetup(socketUrl){
+            console.log(chatSocket);
+            chatSocket = new WebSocket(socketUrl);
+            chatSocket.onmessage = function(e) {
+                const data = JSON.parse(e.data);
+                // document.querySelector('#chat-log').value += (data.message + '\n');
+                console.log(data);
+                liItem = document.createElement("li");
+                liItem.className += "clearfix";
+                divTime = document.createElement("div");
+
+                spanTime = document.createElement('span');
+                spanTime.className += "message-data-time";
+                divMsg = document.createElement("div");
+                if (roomName === data.user) {
+                    divMsg.className += "message other-message float-left";
+                    divTime.className += "message-data text-start";
+                } else {
+                    divMsg.className += "message other-message float-right";
+                    divTime.className += "message-data text-end";
+                }
+                msgTime = new Date(data.time);
+                spanTime.appendChild(document.createTextNode(msgTime.getHours() + ":" + (msgTime.getMinutes()<10?'0':'') + msgTime.getMinutes()));
+                divTime.appendChild(spanTime);
+                liItem.appendChild(divTime);
+                if (data.msg_type === 'text') {
+                    divMsg.appendChild(document.createTextNode(data.message));
+                } else {
+                    var para = document.createElement("P");
+                    para.innerHTML = 'Poi: ' + data.name + ', ' + data.info +
+                        ' at ' + data.time + '.<br>Location: SRID=4326;POINT (' + data.lat + ' ' + data.long + ')<br>' +
+                        '<button type=\"button\" class=\"btn btn-warning\" onclick=\"alert(\'SRID=4326;POINT (' + data.lat + ' ' + data.long + ')\');\">View PoI</button>'
+                    divMsg.appendChild(para)
+                }
+                liItem.appendChild(divMsg);
+                msgList.appendChild(liItem);
+                // scroll to the end of chat
+                chatElem.scrollTop = chatElem.scrollHeight - chatElem.clientHeight;
+                // move chat name to the top of chat list at the left
+                let chatNameLi = document.getElementById('chat_name_'+roomName);
+                let pa = chatNameLi.parentNode;
+                let sibs = pa.getElementsByTagName('li');
+                pa.insertBefore(chatNameLi, sibs[0]);
+            };
+
+            chatSocket.onclose = function(e) {
+                console.error('Chat socket closed unexpectedly');
+            };
+        }
+        // setup initial socket
+        socketSetup(socketUrl(roomName));
+
+        document.querySelector('#chat-message-input').focus();
+        document.querySelector('#chat-message-input').onkeyup = function(e) {
+            if (e.keyCode === 13) {  // enter, return
+                document.querySelector('#chat-message-submit').click();
+            }
+        };
+
+        document.querySelector('#chat-message-submit').onclick = function(e) {
+            const messageInputDom = document.querySelector('#chat-message-input');
+            const message = messageInputDom.value;
+            var today = new Date();
+            var date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
+            var time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
+            chatSocket.send(JSON.stringify({
+                'message': message,
+                'mission_id': 7,
+                'msg_type': 'text',
+                'time': date + ' ' + time,
+             }));
+            messageInputDom.value = '';
+        };
+
+        // sent image handle
+        chatImg = document.querySelector('#preview-img');
+        chatTxt = document.querySelector('#chat-message-input');
+        document.querySelector('#chat-image').addEventListener("change", function(){
+            const file = this.files[0];
+
+            if (file){
+                dt = new Date(file.lastModified);
+                const reader = new FileReader();
+                reader.addEventListener("load", function () {
+                    // send image
+                    chatImg.setAttribute("src", this.result);
+                    chatImg.style.display = "block";
+                    chatTxt.style.display = "none";
+                });
+                reader.readAsDataURL(file);
+            } else {
+                chatImg.setAttribute("src", "");
+                chatImg.style.display = "none";
+                chatTxt.style.display = "block";
+            }
+        });
+
+        // function for change open chat - reload page with chat name as parameter
+        function openNewChat(newRoomName) {
+            console.log('new room name ' + newRoomName);
+            // if the click is on the open chat then ignore
+            if (roomName === newRoomName){
+                return
+            }
+            window.location.href = window.location.href.replace( /[\?#].*|$/, "?chat-name=" + newRoomName );
+
+        }
+    </script>
+{% endblock %}

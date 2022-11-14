@@ -1,0 +1,33 @@
+{% extends 'web/base.html' %}
+{% load static %}
+
+{% block body %}
+
+    <div class="row justify-content-center mt-3 mb-3">
+        <div class="col-lg-5 col-md-8 text-center">
+            <a class="btn btn-orange text-white" href="{% url 'web:new_mission' %}"  style="min-width: 150px;">
+                <i class="far fa-plus-square mr-1"></i>
+                New Mission
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center mt-3 mb-3">
+        <div class="col-lg-5 col-md-8 text-center">
+            <a class="btn btn-orange text-white" href="{% url 'web:find_mission' %}"  style="min-width: 150px;">
+                <i class="fas fa-search mr-1"></i>
+                Find Mission
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center mt-3 mb-3">
+        <div class="col-lg-5 col-md-8 text-center">
+            <a class="btn btn-orange text-white" href="{% url 'web:user_logout' %}" style="min-width: 150px;">
+                <i class="fas fa-sign-out-alt mr-1"></i>
+                Logout
+            </a>
+        </div>
+    </div>
+
+{% endblock %}

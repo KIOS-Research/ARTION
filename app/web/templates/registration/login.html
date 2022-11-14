@@ -1,0 +1,43 @@
+{% extends 'web/base.html' %}
+{% load static %}
+
+{% block head_block %}
+    <!-- custom css -->
+    <link rel="stylesheet" href="{% static 'style/styles.min.css' %}">
+{% endblock %}
+
+{% block login_body %}
+ <div class="content-wrap py-0 mt-5">
+        <div class="vertical-middle">
+            <div class="container-fluid py-5 mx-auto">
+
+                <div class="card mx-auto rounded-0 border-0 login-box mt-5" >
+                    <div class="card-body" style="padding: 35px;">
+             <form action="" class="mb-0" method="post" id="data_form">
+                {% csrf_token %}
+                <h4 class="pb-4">Login to your account</h4>
+                <div class="row">
+                    <div class="col-12 form-group">
+                        <label class="field-required" for="id_username" style="text-transform: capitalize;">Username:</label>
+                        <input class="form-control not-dark" required="" type="text" name="username" autofocus="" autocapitalize="none" autocomplete="off" maxlength="150" id="id_username">
+                    </div>
+                    <div class="col-12 form-group">
+                        <label class="field-required" for="id_password" style="text-transform: capitalize;">Password:</label>
+                        <input class="form-control not-dark" required="" type="password" name="password" autofocus="" autocapitalize="none" autocomplete="off" maxlength="150" id="id_password">
+                    </div>
+
+                    {% if form.errors %}
+                        <p class="field-error">Wrong credentials. Please try again.</p>
+                    {% endif %}
+                    <div class="col-12 form-group">
+                        <button class="btn btn-civil-blue w-100 " style="max-width:100%!important;" role="button" id="login-form-submit" type="submit" name="login">Login</button>
+                    </div>
+                </div>
+                <input type="hidden" name="next" value="{{ next }}">
+             </form>
+        </div>
+    </div>
+</div>
+        </div>
+ </div>
+{% endblock %}

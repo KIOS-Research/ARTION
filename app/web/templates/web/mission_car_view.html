@@ -1,0 +1,138 @@
+{% extends 'web/inside_mission_base.html' %}
+{% load static %}
+
+{% block head_block %}
+    <!-- datatables -->
+    <link rel="stylesheet" href="{% static 'lib/data_tables/datatables.min.css' %}">
+    <script src="{% static 'lib/data_tables/datatables.min.js' %}"></script>
+{% endblock %}
+
+{% block body %}
+    <div class="p-5 footer-margin">
+        <h4 class="mb-4">Cars</h4>
+        <table class="table-striped table" id="r_table" style="color: black">
+            <thead>
+                <tr>
+                    <th scope="col">ID</th>
+                    <th scope="col">License Plates</th>
+                    <th scope="col">Registration Number</th>
+                    <th scope="col"></th>
+                    <th scope="col"></th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for s in data %}
+                    <tr>
+                        <td>{{s.id}}</td>
+                        <td>{{s.license_plates}}</td>
+                        {% if s.registration_number %}
+                            <td>{{s.registration_number}}</td>
+                        {% else %}
+                            <td> </td>
+                        {% endif %}
+                        {% if s.available_car %}
+                            <td><button class="btn btn-success text-white" data-bs-toggle="modal" data-bs-target="#team-modal" data-bs-whatever="{{ s.id }}">Assign</button></td>
+                        {% else %}
+                            <td><button class="btn btn-success text-white" data-bs-toggle="modal" disabled>Assign</button></td>
+                        {% endif %}
+                        {% if s.available_car %}
+                            <td><button class="btn btn-danger text-white" href="#" disabled>Release</button></td>
+                        {% else %}
+                            <td><a class="btn btn-danger text-white" href="{% url 'web:mission_car_release' mission_id s.id %}" id="delete-car">Release</a></td>
+                        {% endif %}
+
+                    </tr>
+                {% endfor%}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="modal fade" id="team-modal" tabindex="-1" aria-labelledby="teamModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalLabel">Assign Car</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form action="" class="uniForm ml-3" method="post" id="data_form">
+            {% csrf_token %}
+            <div class="row row-cols-1 mb-4">
+                {% for field in assign_form %}
+                    {%  if not field.is_hidden %}
+                        <div class="col-12">
+                            <label class="field-label{% if field.field.required %} field-required{% endif %}"
+                                   for="{{ field.name }}">
+                                {{ field.label }}:
+                            </label>
+                            {% if field.help_text %}
+                                <span class="field-helptext">{{ field.help_text|safe }}</span>
+                            {% endif %}
+                            {% if field.errors %}
+                                <span class="field-error">{{ field.errors }}</span>
+                            {% endif %}
+                            <div class="mb-3" style="width: 50%;">
+                            {{ field }}
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            <button class="btn btn-civil-blue me-3" type="submit" id="submit">
+                <i class="fas fa-save mr-1"></i>
+                Save
+            </button>
+            <button type="button" class="btn btn-invert-civil-blue" data-bs-dismiss="modal">
+                <i class="fas fa-arrow-circle-left mr-1"></i>
+                Cancel
+            </button>
+        </form>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script>
+        $(document).ready (function () {
+
+            let table = $('#r_table').DataTable ({
+                dom: 'B<"clear">lfrtip',
+                order: [0, 'desc'],
+                lengthMenu: [[10, 25], [10, 25]],
+                pageLength: 10,
+            });
+        });
+
+        // delete confirmation popup and redirect to delete page
+        $('#delete-team').click(function(event) {
+            // Don't follow the link
+            event.preventDefault();
+
+            if (window.confirm("Are you sure you want to delete team?")) {
+                location.replace(this.href);
+            }
+        });
+
+        let teamModal = document.getElementById('team-modal')
+        teamModal.addEventListener('show.bs.modal', function (event) {
+          // Button that triggered the modal
+          let button = event.relatedTarget
+          // Extract info from data-bs-* attributes
+          let plates = button.getAttribute('data-bs-whatever')
+          // If necessary, you could initiate an AJAX request here
+          // and then do the updating in a callback.
+          //
+          // Update the modal's content.
+          let licensePlatesElem = document.getElementById('id_car');
+          licensePlatesElem.value = plates;
+          licensePlatesElem.disabled = "True";
+        })
+        $("#submit").click(function() {
+            $("#id_car").attr("disabled", false);
+        });
+    </script>
+{% endblock %}
+
+

@@ -1,0 +1,62 @@
+{% extends 'web/inside_mission_base.html' %}
+{% load static %}
+
+{% block head_block %}
+    <!-- datatables -->
+    <link rel="stylesheet" href="{% static 'lib/data_tables/datatables.min.css' %}">
+    <script src="{% static 'lib/data_tables/datatables.min.js' %}"></script>
+{% endblock %}
+
+{% block body %}
+    <div class="p-5 footer-margin">
+        <h4 class="mb-4">Available Predefined Teams</h4>
+        <table class="table-striped table" id="r_table" style="color: black">
+            <thead>
+                <tr>
+                    <th scope="col">ID</th>
+                    <th scope="col">Team Name</th>
+                    <th scope="col">Team Info</th>
+                    <th scope="col">Team Members</th>
+                    <th scope="col"></th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for s in data %}
+                    <tr>
+                        <td>{{s.id}}</td>
+                        <td>{{s.team_name}}</td>
+                        {% if s.info %}
+                            <td>{{s.info}}</td>
+                        {% else %}
+                            <td> </td>
+                        {% endif %}
+                        <td>
+                            {% for member in s.team_member.all %}
+                                {{ member }}<br>
+                            {% endfor %}
+                        </td>
+
+                        <td><a class="btn btn-success text-white" href="{% url 'web:mission_predefined_add' mission_id s.id %}">Assign</a></td>
+
+                    </tr>
+                {% endfor%}
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        $(document).ready (function () {
+
+            let table = $('#r_table').DataTable ({
+                dom: 'B<"clear">lfrtip',
+                order: [0, 'desc'],
+                lengthMenu: [[10, 25], [10, 25]],
+                pageLength: 10,
+            });
+        });
+
+    </script>
+{% endblock %}
+
+

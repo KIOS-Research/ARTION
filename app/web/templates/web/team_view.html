@@ -1,0 +1,110 @@
+{% extends 'web/inside_mission_base.html' %}
+{% load static %}
+
+{% block head_block %}
+    <!-- datatables -->
+    <link rel="stylesheet" href="{% static 'lib/data_tables/datatables.min.css' %}">
+    <script src="{% static 'lib/data_tables/datatables.min.js' %}"></script>
+{% endblock %}
+
+{% block body %}
+    <div class="justify-content-center ms-5 me-5 footer-margin">
+        <div class="row pt-5 mb-3">
+            <h3 class="col float-start">Mission Team</h3>
+            <div class="col">
+                <a class="btn bg-civil-blue text-white float-end" href="{% url 'web:team_add' mission_id %}">
+                    <i class="far fa-plus-square "></i>
+                    New Team
+                </a>
+            </div>
+        </div>
+        <table class="table-striped table" id="r_table" style="color: black">
+            <thead>
+                <tr>
+                    <th scope="col">ID</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Information</th>
+                    <th scope="col">Leader</th>
+                    <th scope="col">Members</th>
+                    <th scope="col">Number of members</th>
+                    {% if not mission_ended %}
+                        <th scope="col"></th>
+                    {% endif %}
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for s in data %}
+                    <tr>
+                        <td>{{s.team_id}}</td>
+                        {% if not mission_ended %}
+                            <td><a class="text-dark" href="{% url 'web:team_edit' mission_id s.team_id %}">{{s.name}}</a></td>
+                        {% else %}
+                            <td>{{s.name}}</td>
+                        {% endif %}
+                        {% if s.info %}
+                            <td>{{s.info}}</td>
+                        {% else %}
+                            <td> </td>
+                        {% endif %}
+                        <td>{{s.leader}}</td>
+                        <td>
+                            {% for member in s.team_user.all %}
+                                {{ member }}<br>
+                            {% endfor %}
+                        </td>
+                        <td>{{s.number_of_members}}</td>
+
+                        {% if not mission_ended %}
+                            <td><a class="btn btn-danger text-white" href="{% url 'web:team_delete' mission_id s.team_id %}" id="delete-team">Delete Team</a></td>
+                        {% endif %}
+                    </tr>
+                {% endfor%}
+            </tbody>
+        </table>
+    </div>
+    <script>
+        $(document).ready (function () {
+
+            let table = $('#r_table').DataTable ({
+                "language": {
+                    "info":           "Σελίδα _PAGE_ από _PAGES_",
+                    "emptyTable":     "Δεν υπάρχουν δεδομένα",
+                    "infoEmpty":      "Προβολή 0 μέχρι 0 από 0 καταχωρήσεις",
+                    "infoFiltered":   "(φιλτράρισμα από _MAX_ συνολικές καταχωρήσεις)",
+                    "lengthMenu":     "Προβολή _MENU_ καταχωρήσεις",
+                    "loadingRecords": "Φόρτωση...",
+                    "processing":     "Επεξεργασία...",
+                    "search":         "Αναζήτηση:",
+                    "zeroRecords":    "Δεν υπάρχουν σχετικές καταχωρήσεις",
+                    "paginate": {
+                        "first":      "Πρώτη",
+                        "last":       "Τελευταία",
+                        "next":       "Επόμενη",
+                        "previous":   "Προηγούμενη"
+                    },
+                    "aria": {
+                        "sortAscending":  ": activate to sort column ascending",
+                        "sortDescending": ": activate to sort column descending"
+                    }
+                },
+                dom: 'B<"clear">lfrtip',
+                order: [0, 'desc'],
+                lengthMenu: [[10, 25], [10, 25]],
+                pageLength: 10,
+            });
+        });
+
+        // delete confirmation popup and redirect to delete page
+        $('#delete-team').click(function(event) {
+            // Don't follow the link
+            event.preventDefault();
+
+            if (window.confirm("Are you sure you want to delete team?")) {
+                location.replace(this.href);
+            }
+        });
+    </script>
+{% endblock %}
+
+

@@ -1,0 +1,115 @@
+version: '3.7'
+
+services:
+  postgres:
+    build:
+      context: .
+      dockerfile: db/pg-Dockerfile
+    volumes:
+      - postgres:/data/postgres
+      - ./db:/docker-entrypoint-initdb.d/
+    environment:
+      POSTGRES_USER: "artionusr"
+      POSTGRES_PASSWORD: "artion1234!"
+      POSTGRES_DB: "artiondb"
+      PGDATA: /data/postgres
+    ports:
+      - 5438:5432
+    restart: unless-stopped
+  redis:
+    image: redis:6.2.7
+    restart: unless-stopped
+    expose:
+      - 6379
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "500k"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          memory: 4000M
+        reservations:
+          memory: 20M
+  web:
+    build: ./app
+    restart: unless-stopped
+    command: gunicorn artion_backend.wsgi:application --bind 0.0.0.0:8001 --workers=1 --preload
+    volumes:
+      - static_volumeartion:/home/app/web/staticfiles
+      - ./app/uploads/:/home/app/web/uploads/
+      - ./app/:/usr/src/app/
+    expose:
+      - 8001
+    env_file:
+      - ./.env.dev
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "15m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          memory: 1000M
+        reservations:
+          memory: 20M
+    depends_on:
+      - postgres
+      - redis
+  websocket:
+    build:
+      context: ./app
+      dockerfile: Dockerfilesocket
+    restart: unless-stopped
+    command: daphne -b 0.0.0.0 -p 8002 -v 3 artion_backend.asgi:application
+    volumes:
+      - static_volumeartion:/home/app/web/staticfiles
+      - ./app/uploads/:/home/app/web/uploads/
+      - ./app/:/usr/src/app/
+    expose:
+      - 8002
+    env_file:
+      - ./.env.dev
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "15m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          memory: 1000M
+        reservations:
+          memory: 20M
+    depends_on:
+      - web
+      - postgres
+      - redis
+  nginx:
+    build: ./nginx
+    restart: unless-stopped
+    volumes:
+      - static_volumeartion:/home/app/web/staticfiles
+      - ./app/uploads/:/home/app/web/uploads/
+    ports:
+      - 9055:80
+    depends_on:
+      - web
+      - websocket
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          memory: 2000M
+        reservations:
+          memory: 20M
+
+volumes:
+  postgres:
+  static_volumeartion:

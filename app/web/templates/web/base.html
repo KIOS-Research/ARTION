@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>{% block title %}Artion{% endblock %}</title>
+    {% load static %}
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-gtEjrD/SeCtmISkJkNUaaKMoLD0//ElJ19smozuHV6z3Iehds+3Ulb9Bn9Plx0x4" crossorigin="anonymous"></script>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous">
+    <!-- font awesome -->
+    <link rel="stylesheet" href="{% static 'lib/fonts/fontawesome-all.min.css'%}">
+    <!-- custom css -->
+    <link rel="stylesheet" href="{% static 'style/custom.css' %}">
+    <!-- custom sidebar css -->
+    <link rel="stylesheet" href="{% static 'style/sidebar.css' %}">
+    <!-- Favicon -->
+    <link rel="shortcut icon" type="image/png" href="{% static 'img/favicon.svg' %}"/>
+    {% block head_block %}
+    {% endblock %}
+</head>
+<body class="bg-white">
+    <nav class="navbar navbar-expand-md fixed-top navbar-light bg-white border-bottom border-2">
+        <div class="container-fluid ms-2 me-5">
+            <div class="navbar-brand">
+                <a class="text-decoration-none text-dark" href="{% url 'web:find_mission' %}">
+                    <img src="{% static 'img/logo.png' %}"  alt="logo" height="60px;">
+                </a>
+            </div>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#collapsibleTopNavbar" aria-controls="navbarSupportedContent"
+                    aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="collapsibleTopNavbar">
+                <div class="navbar-nav ms-auto">
+
+                    {% if user.is_authenticated %}
+                        {% block mission_code_block %}
+                        {% endblock %}
+                        {% block menu %}
+                            <div class="text-dark p-2 me-4">
+                                <i class="fas fa-user me-1"></i>
+                                {{ username }}
+                            </div>
+                            <a class="text-decoration-none text-dark p-2" href="{% url 'web:user_logout' %}">
+                                <i class="fas fa-sign-out-alt"></i>
+                                Logout
+                            </a>
+                        {%  endblock %}
+                    {% else %}
+                        <a class="text-decoration-none text-dark" href="{% url 'web:user_login' %}">
+                            <i class="fas fa-sign-in-alt mr-1"></i>
+                            Login
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+    {% if user.is_authenticated %}
+    <!-- Sidebar -->
+    <div class="row top-margin" id="body-row">
+        <!-- Sidebar -->
+        <div id="sidebar-container" class="sidebar-expanded d-none d-md-block border-end border-2">
+            <!-- Bootstrap List Group -->
+            <ul class="list-group">
+                <!-- mission menu link -->
+                {% block mission %}
+                    <a href="{% url 'web:find_mission' %}" class="list-group-item list-group-item-action text-dark">
+                        <div class="d-flex w-100 justify-content-start align-items-center">
+                            <span class="fas fa-flag fa-fw me-2"></span>
+                            <span class="menu-collapsed">Missions</span>
+                        </div>
+                    </a>
+                {% endblock %}
+                <!-- predefined teams menu link -->
+                {% block predefined_teams %}
+                    <a href="{% url 'web:predefined_view' %}" class="list-group-item list-group-item-action text-dark">
+                        <div class="d-flex w-100 justify-content-start align-items-center">
+                            <span class="fas fa-users-cog fa-fw me-2"></span>
+                            <span class="menu-collapsed">Predefined Teams</span>
+                        </div>
+                    </a>
+                {% endblock %}
+                <!-- cars menu link -->
+                {% block cars %}
+                    <a href="{% url 'web:car_view' %}" class="list-group-item list-group-item-action text-dark">
+                        <div class="d-flex w-100 justify-content-start align-items-center">
+                            <span class="fas fa-car fa-fw me-2"></span>
+                            <span class="menu-collapsed">Cars</span>
+                        </div>
+                    </a>
+                {% endblock %}
+                {% block mission_menu %}
+                {% endblock %}
+                {% block map_tools_menu %}
+                {% endblock %}
+                <!-- profile menu link -->
+                <a href="#" class="list-group-item list-group-item-action text-dark">
+                    <div class="d-flex w-100 justify-content-start align-items-center">
+                        <span class="fas fa-user fa-fw me-2"></span>
+                        <span class="menu-collapsed">Profile</span>
+                    </div>
+                </a>
+                <a href="#" data-toggle="sidebar-colapse" class="list-group-item list-group-item-action d-flex align-items-center">
+                    <div class="d-flex w-100 justify-content-start align-items-center">
+                        <span id="collapse-icon" class="fa fa-angle-double-left fa-2w me-2"></span>
+                        <span id="collapse-text" class="menu-collapsed">Collapse</span>
+                    </div>
+                </a>
+            </ul><!-- List Group END-->
+        </div><!-- sidebar-container END -->
+        <!-- MAIN -->
+        <div class="col p-0">
+            {% block body %}
+            {% endblock %}
+            {% block map %}
+            {% endblock %}
+            {% block chat_modal %}
+            {% endblock %}
+        </div><!-- Main Col END -->
+
+    </div><!-- body-row END -->
+
+{% else %}
+    {% block login_body %}
+    {% endblock %}
+{% endif %}
+    {% block footer %}
+        {% include 'web/footer.html' %}
+    {% endblock %}
+    <script>
+        // Collapse click
+        $('[data-toggle=sidebar-colapse]').click(function() {
+
+            $('.menu-collapsed').toggleClass('d-none');
+            $('.sidebar-submenu').toggleClass('d-none');
+            $('.submenu-icon').toggleClass('d-none');
+            $('#sidebar-container').toggleClass('sidebar-expanded sidebar-collapsed');
+
+            // Collapse/Expand icon
+            $('#collapse-icon').toggleClass('fa-angle-double-left fa-angle-double-right');
+        });
+    </script>
+
+</body>
+</html>

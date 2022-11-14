@@ -1,0 +1,99 @@
+{% extends 'web/base.html' %}
+{% load static %}
+
+{% block mission %}
+{% endblock %}
+
+{% block predefined_teams %}
+    {% if not mission_ended %}
+        <a href="{% url 'web:mission_predefined_view' mission_id %}" class="list-group-item list-group-item-action text-dark">
+            <div class="d-flex w-100 justify-content-start align-items-center">
+                <span class="fas fa-users-cog fa-fw me-2"></span>
+                <span class="menu-collapsed">Predefined Teams</span>
+            </div>
+        </a>
+    {% endif %}
+{% endblock %}
+
+{% block cars %}
+    {% if not mission_ended %}
+        <a href="{% url 'web:mission_car_view' mission_id %}" class="list-group-item list-group-item-action text-dark">
+            <div class="d-flex w-100 justify-content-start align-items-center">
+                <span class="fas fa-car fa-fw me-2"></span>
+                <span class="menu-collapsed">Cars</span>
+            </div>
+        </a>
+    {% endif %}
+{% endblock %}
+
+{% block mission_menu %}
+    <!-- Menu with submenu -->
+    <a href="#mission-menu" data-bs-toggle="collapse" aria-expanded="true" aria-controls="mission-menu"
+       class="list-group-item list-group-item-action flex-column align-items-start text-dark">
+        <div class="d-flex w-100 justify-content-start align-items-center">
+            <span class="fas fa-users-cog fa-fw me-2"></span>
+            <span class="menu-collapsed">Mission</span>
+            <span class="menu-collapsed fas fa-caret-down ms-2"></span>
+        </div>
+    </a>
+    <!-- Submenu content -->
+    <div id='mission-menu' class="sidebar-submenu">
+        <a href="{% url 'web:map_id' mission_id %}" class="list-group-item list-group-item-action text-dark">
+            <span class="fas fa-map-marked fa-fw me-2"></span>
+            <span class="menu-collapsed">Map</span>
+        </a>
+        <a href="{% url 'web:team_view' mission_id %}" class="list-group-item list-group-item-action text-dark">
+            <span class="fas fa-users fa-fw me-2"></span>
+            <span class="menu-collapsed">Mission Teams</span>
+        </a>
+        {% if not mission_ended %}
+        <a href="{% url 'web:end_mission' mission_id %}" class="list-group-item list-group-item-action text-dark">
+            <span class="fas fa-check-circle fa-fw me-2"></span>
+            <span class="menu-collapsed">Complete Mission</span>
+        </a>
+        {% endif %}
+        <a href="{% url 'web:find_mission' %}" class="list-group-item list-group-item-action text-dark">
+            <span class="fas fa-times-circle fa-fw me-2"></span>
+            <span class="menu-collapsed">Exit Mission</span>
+        </a>
+    </div>
+{% endblock %}
+
+
+{% block map_tools_menu %}
+    {% if False %}
+    <!-- Menu with submenu -->
+    <a href="#tools-menu" data-bs-toggle="collapse" aria-expanded="false" aria-controls="tools-menu"
+       class="list-group-item list-group-item-action flex-column align-items-start text-dark">
+        <div class="d-flex w-100 justify-content-start align-items-center">
+            <span class="fas fa-tools fa-fw me-2"></span>
+            <span class="menu-collapsed">Map Tools</span>
+            <span class="menu-collapsed fas fa-caret-down ms-2"></span>
+        </div>
+    </a>
+    <!-- Submenu content -->
+    <div id='tools-menu' class="collapse sidebar-submenu">
+        <a href="#" class="list-group-item list-group-item-action text-dark">
+            <span class="fas fa-image fa-fw me-2"></span>
+            <span class="menu-collapsed">Upload image</span>
+        </a>
+        <a href="#" class="list-group-item list-group-item-action text-dark">
+            <span class="fas fa-video fa-fw me-2"></span>
+            <span class="menu-collapsed">Upload video</span>
+        </a>
+    </div>
+    {% endif %}
+{% endblock %}
+
+
+{% block mission_code_block %}
+    <div class=" p-2 me-4 text-dark">
+        <i class="fas fa-flag me-2"></i>
+        {{ mission_code }}
+    </div>
+{% endblock %}
+
+{% block chat_modal %}
+    <!-- include chat modal & button -->
+    {% include 'web/chat_modal.html' %}
+{% endblock %}

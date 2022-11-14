@@ -1,0 +1,125 @@
+
+<div class="modal" tabindex="-1" id="share-modal">
+    <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Send to</h5>
+            </div>
+            <div class="modal-body">
+                {% for user in people_list %}
+                    <div class="row border-bottom p-2">
+                        <div class="col-8">
+                            <i class="fas fa-user me-2"></i>
+                            {{ user.full_name }}
+                        </div>
+                        <div class="col-4">
+                            <button id="share-btn" type="button" class="btn btn-civil-blue" onclick="this.disabled=true; shareFeature('{{ user.username }}');">Send</button>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" onclick="closeShareModal();">
+                    <i class="far fa-window-close me-1"></i>
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function shareFeature(chatName) {
+        let socketUrl = 'wss://'
+            + window.location.host
+            + '/wss/chat/'
+            + 'user/'
+            + chatName
+            + '/{{mission_id}}/';
+
+
+        if (shareFeatureType === 'poi') {
+            let tempSocket = new WebSocket(socketUrl);
+            let today = new Date();
+            let date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
+            let time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
+            // Connection opened
+            tempSocket.addEventListener('open', (event) => {
+                tempSocket.send(JSON.stringify({
+                    'message': '',
+                    'mission_id': '{{mission_id}}',
+                    'msg_type': 'poi',
+                    'lat': parseFloat(shareFeatureLat),
+                    'long': parseFloat(shareFeatureLng),
+                    'info': shareFeatureInfo,
+                    'name': shareFeatureName,
+                    'time': date + ' ' + time,
+                }));
+                tempSocket.onmessage = function (e) {
+                    const data = JSON.parse(e.data);
+                    // when the feature is send in the channel close the socket
+                    if (data.lat === parseFloat(shareFeatureLat) && data.long === parseFloat(shareFeatureLng) &&
+                        data.info === shareFeatureInfo && data.name === shareFeatureName) {
+                        tempSocket.close();
+                        $( "#success-alert-text" ).text( "POI sent successfully" );
+                        $("#success-alert").fadeTo(2000, 500).slideUp(500, function(){
+                            $("#success-alert").slideUp(500);
+                        });
+                    }
+                }
+            });
+        } else if (shareFeatureType === 'route') {
+            let tempSocket = new WebSocket(socketUrl);
+            let today = new Date();
+            let date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
+            let time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
+            // Connection opened
+            tempSocket.addEventListener('open', (event) => {
+                tempSocket.send(JSON.stringify({
+                    'mission_id': '{{mission_id}}',
+                    'msg_type': 'route',
+                    'geom': shareFeatureGeom,
+                    'info': shareFeatureInfo,
+                    'name': shareFeatureName,
+                    'time': date + ' ' + time,
+                }));
+                tempSocket.onmessage = function (e) {
+                    const data = JSON.parse(e.data);
+                    // when the feature is send in the channel close the socket
+                    if (data.info === shareFeatureInfo &&
+                        data.name === shareFeatureName) {
+                        let isSame = true;
+                        for (let i = 0; i < data.geom.length; i++) {
+                            if (data.geom[i][0] !==  shareFeatureGeom[i]['lat'] || data.geom[i][1] !==  shareFeatureGeom[i]['lng']) {
+                                isSame = false;
+                                break;
+                            }
+                         }
+                        if (isSame){
+                            tempSocket.close();
+                            $( "#success-alert-text" ).text( "Route sent successfully" );
+                            $("#success-alert").fadeTo(2000, 500).slideUp(500, function(){
+                                $("#success-alert").slideUp(500);
+                            });
+                        }
+                    }
+                }
+            });
+        }
+    }
+    function closeShareModal(){
+        // clear global share variables
+        shareFeatureType = "";
+        shareFeatureName = "";
+        shareFeatureInfo = "";
+        shareFeatureLat = 0;
+        shareFeatureLng = 0;
+        shareFeatureGeom = 0;
+        // enable all share buttons
+        $("button[id=share-btn]").each(function() {
+            $( this ).prop('disabled', false);
+        });
+        // close modal
+        document.getElementById('share-modal').style.display = 'none';
+    }
+</script>

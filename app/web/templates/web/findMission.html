@@ -1,0 +1,96 @@
+{% extends 'web/base.html' %}
+{% load static %}
+
+{% block head_block %}
+    <!-- datatables -->
+    <link rel="stylesheet" href="{% static 'lib/data_tables/datatables.min.css' %}">
+    <script src="{% static 'lib/data_tables/datatables.min.js' %}"></script>
+{% endblock %}
+
+{% block body %}
+    <div class="justify-content-center ms-5 me-5 footer-margin">
+        <div class="row pt-5">
+            <h3 class="col float-start">Missions</h3>
+            <div class="col">
+                <a class="btn bg-civil-blue text-white float-end" href="{% url 'web:new_mission' %}">
+                    <i class="far fa-plus-square "></i>
+                    New Mission
+                </a>
+            </div>
+        </div>
+        <div class="row mb-5">
+            <div class="col-sm" style="color: black">
+                <div> <br/> </div>
+                <table class="table-striped table" id="r_table" style="color: black">
+                  <thead>
+                    <tr>
+                        <th scope="col">Code</th>
+                        <th scope="col">Name</th>
+                        <th scope="col">Date/Time</th>
+                        <th scope="col"></th>
+                        <th scope="col">Status</th>
+                        <th scope="col"></th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {% for s in data %}
+                    <tr>
+                        <td>{{s.unique_code}}</td>
+                        <td>{{s.name}}</td>
+                        <td>{{s.date|date:'Y-m-d H:i'}}</td>
+                        <td><a class="btn btn-orange text-white" href="{% url 'web:map_id' s.mission_id %}">Map</a></td>
+                        {% if s.is_closed %}
+                            <td class="text-success">Completed</td>
+                        {% else %}
+                            <td class="text-secondary">Pending...</td>
+                        {% endif %}
+                        {% if s.is_closed %}
+                            <td><button class="btn btn-success" href="#" disabled>Complete</button></td>
+                        {% else %}
+                            <td><a class="btn btn-success" href="{% url 'web:end_mission' s.mission_id %}">Complete</a></td>
+                        {% endif %}
+
+                    </tr>
+                  {% endfor%}
+                  </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <script>
+        $(document).ready (function () {
+
+            var table = $('#r_table').DataTable ({
+                "language": {
+                    "info":           "Σελίδα _PAGE_ από _PAGES_",
+                    "emptyTable":     "Δεν υπάρχουν δεδομένα",
+                    "infoEmpty":      "Προβολή 0 μέχρι 0 από 0 καταχωρήσεις",
+                    "infoFiltered":   "(φιλτράρισμα από _MAX_ συνολικές καταχωρήσεις)",
+                    "lengthMenu":     "Προβολή _MENU_ καταχωρήσεις",
+                    "loadingRecords": "Φόρτωση...",
+                    "processing":     "Επεξεργασία...",
+                    "search":         "Αναζήτηση:",
+                    "zeroRecords":    "Δεν υπάρχουν σχετικές καταχωρήσεις",
+                    "paginate": {
+                        "first":      "Πρώτη",
+                        "last":       "Τελευταία",
+                        "next":       "Επόμενη",
+                        "previous":   "Προηγούμενη"
+                    },
+                    "aria": {
+                        "sortAscending":  ": activate to sort column ascending",
+                        "sortDescending": ": activate to sort column descending"
+                    }
+                },
+                dom: 'B<"clear">lfrtip',
+                order: [2, 'desc'],
+                lengthMenu: [[10, 25], [10, 25]],
+                pageLength: 10,
+                {#select: true,#}
+            });
+        });
+    </script>
+
+
+{% endblock %}

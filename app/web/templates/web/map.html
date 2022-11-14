@@ -1,0 +1,451 @@
+{% extends 'web/inside_mission_base.html' %}
+{% load static %}
+{% load leaflet_tags %}
+
+{% block head_block %}
+    {% leaflet_js %}
+	{% leaflet_css %}
+
+    <!-- leaflet marker cluster for layer -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css">
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+    <!-- leaflet measure -->
+    <link rel="stylesheet" href="{% static 'lib/leaflet/measure/leaflet-measure.css' %}">
+    <script src="{% static 'lib/leaflet/measure/leaflet-measure.js' %}"></script>
+    <!-- leaflet mouse position -->
+    <link rel="stylesheet" href="{% static 'lib/leaflet/mouse_position/L.Control.MousePosition.css' %}">
+    <script src="{% static 'lib/leaflet/mouse_position/L.Control.MousePosition.js' %}"></script>
+    <!-- leaflet geoman - draw/edit tool -->
+    <link rel="stylesheet" href="{% static 'lib/leaflet/geoman/leaflet-geoman.css' %}">
+    <script src="{% static 'lib/leaflet/geoman/leaflet-geoman.min.js' %}"></script>
+    <!-- Chat custom style -->
+    <link rel="stylesheet" href="{% static 'style/chat.css' %}">
+    <link rel="stylesheet" href="{% static 'style/map.css' %}">
+
+{% endblock %}
+
+
+{% block map %}
+    <!-- Map element -->
+	{% leaflet_map "map" %}
+
+    <!-- include share modal -->
+    {% include 'web/share_modal.html' %}
+
+    <!-- Map feature detail modal - start -->
+    <div class="modal" tabindex="-1" id="feature-modal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="add-modal-title">Add new feature</h5>
+                </div>
+                <form>
+                    <div class="modal-body">
+                        <div class="form-group mb-4">
+                            <label for="feature-name">Name: *</label>
+                            <input type="text" name="feature-name" id="feature-name" class="form-control" required>
+                            <h6 id="name-check" style="color: red; display: none;" >**Name is required</h6>
+                        </div>
+                        <div class="form-group">
+                            <label for="feature-info">Description: </label>
+                            <input type="text" name="feature-info" id="feature-info" class="form-control">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-success" onclick="addFeatureData();">
+                            <i class="fas fa-save me-1"></i>
+                            Save
+                        </button>
+                        <button type="button" class="btn btn-danger" onclick="cancelFeatureAddition();">
+                            <i class="far fa-window-close me-1"></i>
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- Map feature detail modal - end -->
+
+    <!-- Feature deleted successfully alert -->
+    {% include 'web/alert_win.html' %}
+    <!-- Feature deleted successfully alert -->
+
+    <!-- remove footer from map page -->
+    {% block footer %}
+    {% endblock %}
+
+    <script>
+        let mission_id = {{ mission_id }};
+        let map;
+        let locationGroupLayer;
+        let featureLayerGroup;
+        let chatFeatureGroupLayer;
+        let drawLayer;
+        let drawLayerType;
+        let enablePopups = true;
+        // variables for sharing map features
+        let shareFeatureName;
+        let shareFeatureInfo;
+        let shareFeatureLat;
+        let shareFeatureLng;
+        let shareFeatureGeom;
+        let shareFeatureType;
+        // marker location vars
+        let poiMarkerUrl = "{% static 'img/poi_marker.svg' %}"
+        let photoMarkerUrl = "{% static 'img/image_marker.svg' %}"
+        let userMarkerUrl = "{% static 'img/user_marker.svg' %}"
+
+        $(window).on('map:init', function(e) {
+            map = e.originalEvent.detail.map;
+            // set postition of layers panel to left side
+            map.layerscontrol.setPosition('topleft');
+
+            /* *** location setup *** */
+            locationGroupLayer = L.layerGroup([]).addTo(map);
+            map.layerscontrol.addOverlay(locationGroupLayer, "User locations");
+            // setup initial socket if mission is not closed
+            if ('{{ mission_ended }}' === "False") {
+                socketSetup(socketUrl('{{ server_mode }}'));
+            }
+            /* *** location setup *** */
+
+            /* *** feature on chat layer *** */
+            chatFeatureGroupLayer = L.layerGroup([]).addTo(map);
+            map.layerscontrol.addOverlay(chatFeatureGroupLayer, "Chat features");
+            /* *** feature on chat layer *** */
+
+            /* *** geoman *** */
+            // add Leaflet-Geoman controls with some options to the map
+            if ('{{ mission_ended }}' === "False") {
+                map.pm.addControls({
+                    position: 'topright',
+                    drawCircleMarker: false,
+                    {#cutPolygon: false,#}
+                });
+                // disable delete for all layers
+                {#L.PM.setOptIn(true);#}
+
+                map.on('pm:create', (e) => {
+                    drawLayerType = e.shape;
+                    drawLayer = e.layer;
+                    // enable deletion of draw layers
+                    {#drawLayer.options.pmIgnore = false;#}
+                    drawLayer.options.canRemoved = true;
+                    L.PM.reInitLayer(drawLayer);
+
+                    if (drawLayerType === "Marker"){
+                        $("#add-modal-title").text("Add new PoI");
+                        $("#feature-modal").show();
+                    }
+                    if (drawLayerType === "Line"){
+                        $("#add-modal-title").text("Add new Route");
+                        $("#feature-modal").show();
+                    }
+                });
+                map.on("pm:globalremovalmodetoggled", (e) => {
+                    enablePopups = !e.enabled;
+                })
+                map.on("pm:remove", (e) => {
+                    if (!e.layer.options.canDelete && !e.layer.feature.properties.canDelete) {
+                        if (e.layer.feature.properties.type === "user") {
+                            locationGroupLayer.addLayer(e.layer);
+                        }
+                        return
+                    }
+                    let featId = e.layer.options.title;
+                    if (!featId) {
+                        featId = e.layer.feature.properties.id;
+                    }
+                    $.ajax({
+                        url: "{% url 'web:delete_feature' %}",
+                        type: 'post',
+                        data: {
+                            csrfmiddlewaretoken: "{{ csrf_token }}",
+                            pk : `${featId}`,
+                            dataType: "json",
+                        },
+                        success:function(data) {
+                            $( "#success-alert-text" ).text( "Feature deleted" );
+                            $("#success-alert").fadeTo(2000, 500).slideUp(500, function(){
+                                $("#success-alert").slideUp(500);
+                            });
+                        },
+                        failure: function() {
+                            alert('Feature is not deleted. Try again');
+                            $( "#danger-alert-text" ).text( "Feature is not deleted. Try again" );
+                            $("#danger-alert").fadeTo(2000, 500).slideUp(500, function(){
+                                $("#danger-alert").slideUp(500);
+                            });
+                        }
+                    });
+                })
+                // todo: on feature edit save the new geometry in db
+            }
+            /* *** geoman *** */
+
+            /* *** measure tool *** */
+            let measureTool = L.control.measure({
+                primaryLengthUnit: 'meters',
+                secondaryLengthUnit: 'kilometers',
+                primaryAreaUnit: 'sqmeters',
+                secondaryAreaUnit: undefined,
+                activeColor: '#FF0000',
+                completedColor: '#0000FF',
+                position: 'topright',
+            })
+            measureTool.addTo(map);
+            /* *** measure tool *** */
+
+            /* *** mouse position *** */
+            L.control.mousePosition({
+                separator: ", "
+            }).addTo(map);
+            /* *** mouse position *** */
+
+            /* *** add saved features in map *** */
+            featureLayerGroup = L.layerGroup().addTo(map);
+
+            {% for feature in feature_list %}
+                if ('{{ feature.type }}' === 'Point') {
+                    addSavedPointFeature('{{ feature.type }}', '{{ feature.id }}', '{{ feature.name }}', '{{ feature.timestamp }}', '{{ feature.lat }}', '{{ feature.lng }}');
+                } else {
+                    addSavedLineStringFeature('{{ feature.type }}', '{{ feature.id }}', '{{ feature.name }}', '{{ feature.timestamp }}', {{ feature.geom }});
+                }
+            {% endfor %}
+            /* *** add saved features in map *** */
+        });
+
+        // check if you it is okay for the popup to open - if not, close it.
+        function onPopupOpen(e) {
+            if (!enablePopups) {
+                this.closePopup();
+            }
+        }
+
+        function  cancelFeatureAddition() {
+            map.removeLayer(drawLayer);
+            $(`#feature-modal`).hide();
+        }
+
+        function addFeatureData() {
+            let featNameElem = $(`#feature-name`);
+            let featInfoElem = $(`#feature-info`);
+            let featureName = featNameElem.val();
+            let featureInfo = featInfoElem.val();
+            if (featureName.length === 0) {
+                $("#name-check").show();
+                return;
+            } else {
+                $("#name-check").hide();
+            }
+
+            if (drawLayerType === "Marker") {
+                $.ajax({
+                    url: "{% url 'web:add_feature' %}",
+                    type: 'post',
+                    data: {
+                        csrfmiddlewaretoken: "{{ csrf_token }}",
+                        mission_id : "{{ mission_id }}",
+                        name : `${featureName}`,
+                        info : `${featureInfo}`,
+                        geom : `SRID=4326;Point(${drawLayer._latlng.lng} ${drawLayer._latlng.lat})`,
+                        dataType: "json",
+                    },
+                    success:function(data){
+                        drawLayer.options.title = data.pk;
+                        drawLayer.options.canDelete = true;
+
+                        let lat = drawLayer._latlng.lat;
+                        let lng = drawLayer._latlng.lng;
+                        {#drawLayer.bindTooltip(featureName);#}
+                        drawLayer.bindPopup(
+                            `<h5 class="text-center mb-2" id="feat_name">${featureName}</h5>
+                            <hr class="text-center">
+                            <h6>${featureInfo}</h6>
+                            <button type="button" class="btn bg-civil-blue text-white" onclick="sentPoi('${featureName}', '${featureInfo}', '${lat}', '${lng}');">
+                                <i class="fas fa-share-alt-square me-2"></i>Share
+                            </button>`
+                        );
+                        featNameElem.val("");
+                        featInfoElem.val("");
+                        $(`#feature-modal`).hide();
+
+                        $( "#success-alert-text" ).text( "Feature added successfully" );
+                        $("#success-alert").fadeTo(2000, 500).slideUp(500, function(){
+                            $("#success-alert").slideUp(500);
+                        });
+                    },
+                    failure: function() {
+                        $( "#danger-alert-text" ).text( "Feature is not added. Try again" );
+                        $("#danger-alert").fadeTo(2000, 500).slideUp(500, function(){
+                            $("#danger-alert").slideUp(500);
+                        });
+                    }
+                });
+
+
+            } else {
+                let line_geom = 'srid=4326;LineString('
+                for (let i = 0; i < drawLayer._latlngs.length; i++) {
+                    line_geom += `${drawLayer._latlngs[i].lng} ${drawLayer._latlngs[i].lat},`
+                }
+                line_geom = line_geom.substring(0, line_geom.length - 1) + ')'
+                $.ajax({
+                    url: "{% url 'web:add_feature' %}",
+                    type: 'post',
+                    data: {
+                        csrfmiddlewaretoken: "{{ csrf_token }}",
+                        mission_id : "{{ mission_id }}",
+                        name : `${featureName}`,
+                        info : `${featureInfo}`,
+                        geom : line_geom,
+                        dataType: "json",
+                    },
+                    success:function(data){
+                        let coords = drawLayer._latlngs;
+                        let geomArray = []
+                        for (let i = 0; i < drawLayer._latlngs.length; i++) {
+                            geomArray.push([drawLayer._latlngs[i]['lat'],drawLayer._latlngs[i]['lng']]);
+                        }
+                        drawLayer.options.title = data.pk;
+                        drawLayer.options.canDelete = true;
+                        {#drawLayer.bindTooltip(featureName);#}
+                        drawLayer.bindPopup(
+                            `<h5 class="text-center mb-2">${featureName}</h5>
+                            <hr class="text-center">
+                            <h6>${featureInfo}</h6>
+                            <button type="button" class="btn bg-civil-blue text-white" onclick="sentRoute('${featureName}', '${featureInfo}', [${geomArray}]);">
+                                <i class="fas fa-share-alt-square me-2"></i>Share
+                            </button>`
+                        );
+                        featNameElem.val("");
+                        featInfoElem.val("");
+                        $(`#feature-modal`).hide();
+
+                        $( "#success-alert-text" ).text( "Feature added successfully" );
+                        $("#success-alert").fadeTo(2000, 500).slideUp(500, function(){
+                            $("#success-alert").slideUp(500);
+                        });
+
+                    },
+                    failure: function() {
+                        $( "#danger-alert-text" ).text( "Feature is not added. Try again" );
+                        $("#danger-alert").fadeTo(2000, 500).slideUp(500, function(){
+                            $("#danger-alert").slideUp(500);
+                        });
+                    }
+                });
+            }
+        }
+
+        function sentPoi(name, info, lat, long) {
+            shareFeatureType = 'poi';
+            shareFeatureName = name;
+            shareFeatureInfo = info;
+            shareFeatureLat = lat;
+            shareFeatureLng = long;
+            document.getElementById('share-modal').style.display = 'block';
+        }
+
+        function sentRoute(name, info, geom) {
+            let geomArray = Array.from(geom);
+            let newGeom = []
+            for (let i = 0; i < geomArray.length; i+=2) {
+                newGeom.push({'lat': geomArray[i], 'lng': geomArray[i+1]});
+            }
+            shareFeatureType = 'route';
+            shareFeatureName = name;
+            shareFeatureInfo = info;
+            shareFeatureGeom = newGeom;
+            document.getElementById('share-modal').style.display = 'block';
+        }
+
+        function sentOldRoute(name, info, geom) {
+            let geomArray = Array.from(geom);
+            let newGeom = []
+            for (let i = 0; i < geomArray.length; i+=2) {
+                newGeom.push({'lat': geomArray[i+1], 'lng': geomArray[i]});
+            }
+            shareFeatureType = 'route';
+            shareFeatureName = name;
+            shareFeatureInfo = info;
+            shareFeatureGeom = newGeom;
+            document.getElementById('share-modal').style.display = 'block';
+        }
+    </script>
+
+    <!-- add map features -->
+    <script>
+        function addSavedPointFeature(type, feat_id, name, timestamp, lat, lng) {
+            let jsonStr = {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [lat, lng]
+                },
+                "properties": {
+                    "canDelete": true,
+                    "id": feat_id,
+                    "name": name,
+                    "timestamp": timestamp
+                }
+             };
+            let featLayer = L.geoJSON();
+            featLayer.options.title = feat_id;
+            featLayer.options.canRemoved = true;
+
+            featLayer.addData(jsonStr);
+            {#featLayer.bindTooltip(name);#}
+
+            featLayer.bindPopup(
+                `<h5 class="text-center mb-2">${name}</h5>
+                <hr class="text-center">
+                <button type="button" class="btn bg-civil-blue text-white" onclick="sentPoi('${name}', '', '${lng}', '${lat}');">
+                    <i class="fas fa-share-alt-square me-2"></i>Share
+                </button>`
+            );
+            featLayer.on("popupopen", onPopupOpen.bind(featLayer));
+            featureLayerGroup.addLayer(featLayer);
+        }
+
+        function addSavedLineStringFeature(type, feat_id, name, timestamp, geom) {
+            let jsonStr = {
+                "type": "Feature",
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": geom
+                },
+                "properties": {
+                    "canDelete": true,
+                    "id": feat_id,
+                    "name": name,
+                    "timestamp": timestamp
+                }
+             };
+            let featLayer = L.geoJSON();
+            featLayer.options.title = feat_id;
+            featLayer.options.canRemoved = true;
+
+            featLayer.addData(jsonStr);
+            {#featLayer.bindTooltip(name);#}
+            featLayer.bindPopup(
+                `<h5 class="text-center mb-2">${name}</h5>
+                <hr class="text-center">
+                <button type="button" class="btn bg-civil-blue text-white" onclick="sentOldRoute('${name}', '', [${geom}]);">
+                    <i class="fas fa-share-alt-square me-2"></i>Share
+                </button>`
+            );
+            featLayer.on("popupopen", onPopupOpen.bind(featLayer));
+            featureLayerGroup.addLayer(featLayer);
+        }
+    </script>
+    <!-- add map features -->
+
+    <!-- location update script -->
+    {% if not mission_ended %}
+        <script src = "{% static 'js/location.js' %}"></script>
+    {% endif %}
+    <script src = "{% static 'js/chatFeature.js' %}"></script>
+{% endblock %}

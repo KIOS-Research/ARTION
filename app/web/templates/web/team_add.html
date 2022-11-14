@@ -1,0 +1,60 @@
+{% extends 'web/inside_mission_base.html' %}
+{% load static %}
+
+{% block head_block %}
+    <style>
+        ul {
+            list-style: none;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+    <div class="p-5 footer-margin">
+        <h3>{{ title }}</h3>
+        <h6 class="mb-5 text-secondary">{{ title }} details</h6>
+        <form action="" class="uniForm ml-3" method="post" id="data_form">
+            {% csrf_token %}
+            <div class="row row-cols-1 mb-4">
+                {% for field in form %}
+                    {%  if not field.is_hidden %}
+                        <div class="col-12">
+                            <label class="field-label{% if field.field.required %} field-required{% endif %}"
+                                   for="{{ field.name }}">
+                                {{ field.label }}:
+                            </label>
+                            {% if field.help_text %}
+                                <span class="field-helptext">{{ field.help_text|safe }}</span>
+                            {% endif %}
+                            {% if field.errors %}
+                                <span class="field-error">{{ field.errors }}</span>
+                            {% endif %}
+                            <div class="mb-3" style="width: 50%;">
+                            {{ field }}
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            <div class="row mt-3">
+                <div class="col-6 mb-3 col-sm-8 col-xs-12 text-end">
+                    <hr>
+                    <button class="btn btn-civil-blue me-4" id="submit" type="submit">
+                        {% if type == 'add' %}
+                            <i class="far fa-plus-square me-1"></i>
+                            Create
+                        {% else %}
+                            <i class="fas fa-edit"></i>
+                            Update
+                        {% endif %}
+                    </button>
+                    <a class="btn btn-invert-civil-blue" href="{{ view_url }}">
+                        <i class="fas fa-arrow-circle-left mr-1"></i>
+                        Cancel
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+{% endblock %}

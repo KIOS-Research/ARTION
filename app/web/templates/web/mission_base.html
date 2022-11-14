@@ -1,0 +1,59 @@
+{% extends 'web/base.html' %}
+{% load static %}
+
+{% block head_block %}
+    {% block head_mission_block %}
+    {% endblock %}
+    <style>
+         .dropdown:hover .dropdown-menu-hover {
+             display: block;
+             margin-top: 0;
+             width: 100px;
+         }
+    </style>
+{% endblock %}
+
+{% block menu %}
+    {% block tool_menu %}
+    <div class="dropdown">
+        <a class="btn text-white p-2" href="#" role="button" id="toolsDropDown" data-bs-toggle="dropdown"
+                aria-expanded="false">
+            <i class="fas fa-tools mr-1"></i>
+            Tools
+        </a>
+        <div class="dropdown-menu dropdown-menu-hover" aria-labelledby="toolsDropDown">
+            <button class="dropdown-item" aria-labelledby="toolsDropDown"><i class="fas fa-image me-1"></i>Upload image</button>
+            <button class="dropdown-item" aria-labelledby="toolsDropDown"><i class="fas fa-video me-1"></i>Upload video</button>
+        </div>
+    </div>
+    {% endblock %}
+    <a class="text-decoration-none text-white p-2" href="{% url 'web:map_id' mission_id %}">
+        <i class="fas fa-map-marked me-1"></i>
+        Map
+    </a>
+    <a class="text-decoration-none text-white p-2" href="{% url 'web:predefined_view' mission_id %}" target="_blank">
+        <i class="fas fa-cogs me-1"></i>
+        Manage
+    </a>
+    {% block chat_menu %}
+    <a class="text-decoration-none text-white p-2" onclick="document.getElementById('chat-window').style.display = 'block'" href="javascript:void(0)">
+        <i class="fas fa-comments me-1"></i>
+        Chat
+    </a>
+    {% endblock %}
+    <div class="dropdown">
+        <a class="btn  text-white p-2" href="#" role="button" id="exitDropDown" data-bs-toggle="dropdown"
+                aria-expanded="false">
+            <i class="fas fa-sign-out-alt"></i>
+        </a>
+        <div class="dropdown-menu" aria-labelledby="exitDropDown">
+            <a class="dropdown-item" href="{% url 'web:find_mission' %}"><i class="fas fa-times-circle me-1"></i>Exit mission</a>
+            <button class="dropdown-item"><i class="fas fa-check-circle me-1"></i>End mission</button>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="{% url 'web:user_logout' %}">
+                <i class="fas fa-power-off me-1"></i>
+                Logout
+            </a>
+        </div>
+    </div>
+{% endblock %}

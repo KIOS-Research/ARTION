@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Artion</title>
+    {% load static %}
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-gtEjrD/SeCtmISkJkNUaaKMoLD0//ElJ19smozuHV6z3Iehds+3Ulb9Bn9Plx0x4" crossorigin="anonymous"></script>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous">
+    <!-- font awesome -->
+    <link rel="stylesheet" href="{% static 'lib/fonts/fontawesome-all.min.css'%}">
+    <!-- custom css -->
+    <link rel="stylesheet" href="{% static 'style/custom.css' %}">
+    <!-- chat css -->
+    <link rel="stylesheet" href="{% static 'style/chat.css' %}">
+    <!-- Favicon -->
+    <link rel="shortcut icon" type="image/png" href="{% static 'web/img/logoEN.png' %}"/>
+    {% block head_block %}
+    {% endblock %}
+</head>
+
+<body>
+<div class="container">
+<div class="row clearfix">
+    <div class="col-lg-12">
+        <div class="card chat-app">
+            <div id="plist" class="people-list">
+                <div class="input-group" style="width: 90%;">
+                    <div class="dropdown">
+                        <button class="btn btn-civil-blue dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+                            Dropdown button
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+                            {% for people in people_list %}
+                                <li onclick="openNewChat('{{ people|safe }}','user')" id="chat_name_{{ people|safe }}">
+                                    {{ people|safe }}
+                                </li>
+                            {% endfor %}
+                            {% for team in teams %}
+                                <li onclick="openNewChat('{{ team.pk|safe }}','team')" id="chat_name_{{ team.pk|safe }}">
+                                    {{ team.name|safe }}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                <ul class="list-unstyled chat-list mt-2 mb-0">
+                    {% for chat in chat_list %}
+                    <li class="clearfix" onclick="openNewChat('{{ chat.name|safe }}','{{ chat.type|safe }}')" id="chat_name_{{ chat.name|safe }}">
+                        <div class="about">
+                            {% if chat.type == 'user' %}
+                                <i class="fas fa-user"></i>
+                            {% else %}
+                                <i class="fas fa-users"></i>
+                            {% endif %}
+                            {% if chat.unread %}
+                                <span class="name" id="{{ chat.name|safe }}" style="font-weight: bold">{{ chat.display_name|safe }}</span>
+                            {% else %}
+                                <span class="name" id="{{ chat.name|safe }}" style="font-weight: normal">{{ chat.display_name|safe }}</span>
+                            {% endif %}
+                            {% if chat.is_active %}
+                                <div class="status"> <i class="fa fa-circle online"></i> online </div>
+                            {% else %}
+                                <div class="status"> <i class="fa fa-circle offline"></i>offline</div>
+                            {% endif %}
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <div class="chat">
+                <div class="chat-header clearfix">
+                    <div class="row text-center">
+                        <div class="col-2">
+                            <div class="back-button-container">
+                                <i class="fas fa-long-arrow-alt-left" id="back-btn"></i>
+                                <span id="unread_num">1</span>
+                            </div>
+                        </div>
+                        <div class="col-10">
+                            {% if room_type == 'user' %}
+                                <i class="fas fa-user"></i>
+                            {% else %}
+                                <i class="fas fa-users"></i>
+                            {% endif %}
+                            <span class="">{{room_display_name}}</span>
+                            <i class="fa fa-circle offline"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-history overflow-auto chat-height-set" id="chat-history">
+                    <ul class="m-b-0" id="msg-list">
+                        {% for item in msg_list %}
+                        <li class="clearfix">
+                            {% if item.is_sender %}
+                            <div class="message-data text-end">
+                               <span class="message-data-time">{{item.time}}</span>
+                            </div>
+                            <div class="message my-message float-right">{{item.msg|safe}}</div>
+                            {% else %}
+                            <div class="message-data text-start">
+                               <span class="message-data-time">{{item.time}}</span>
+                            </div>
+                            {% if room_type == 'user' %}
+                                <div class="message other-message float-left">{{item.msg|safe}}</div>
+                            {% else %}
+                                <div>{{ item.sender }}:</div><div class="message other-message float-left">{{item.msg|safe}}</div>
+                            {% endif %}
+
+                            {% endif %}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div class="chat-message clearfix">
+                    <div class="input-group mb-0">
+                        <input id="chat-message-input" type="text" class="form-control" placeholder="Enter text here...">
+                        <img id="preview-img" src="" alt="" style="display: none;" height="100px;">
+                        <button class="btn btn-civil-blue btn-sm btn-file ms-1" id="chat-message-submit">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+    {{ room_name|json_script:"room-name" }}
+    {{ room_type|json_script:"room-type" }}
+    <script>
+        let unread_num={{ unread_num }}
+        chatElem = document.getElementById('chat-history');
+        chatElem.scrollTop = chatElem.scrollHeight - chatElem.clientHeight;
+        const roomName = JSON.parse(document.getElementById('room-name').textContent);
+        let activeRoomName = roomName;
+        const roomType = JSON.parse(document.getElementById('room-type').textContent);
+        const msgList = document.querySelector('#msg-list');
+        let chatSocket;
+
+        this.parent.setUnreadNum(unread_num)
+        if (unread_num>9){
+            document.getElementById('unread_num').textContent='9+'
+        }else if (unread_num<1){
+            document.getElementById('unread_num').textContent='';
+        }else {
+            document.getElementById('unread_num').textContent=unread_num
+        }
+
+        function socketUrl(chatName,type){
+            if (location.protocol !== 'https:') {
+                return 'ws://'
+                + window.location.host
+                + '/wss/chat/'
+                + type + '/'
+                + chatName
+                + '/{{mission_id}}/';
+            }
+            return 'wss://'
+                + window.location.host
+                + '/wss/chat/'
+                + type + '/'
+                + chatName
+                + '/{{mission_id}}/';
+        }
+
+        function socketSetup(socketUrl) {
+            chatSocket = new WebSocket(socketUrl);
+            chatSocket.addEventListener('error', function (event) {
+                console.log('WebSocket error: ', event);
+            });
+            chatSocket.onmessage = function (e) {
+                const data = JSON.parse(e.data);
+                liItem = document.createElement("li");
+                liItem.className += "clearfix";
+                divTime = document.createElement("div");
+
+                spanTime = document.createElement('span');
+                spanTime.className += "message-data-time";
+                divMsg = document.createElement("div");
+                divSender = null
+                if ('{{ user.username }}' !== data.user) {
+                    {% if room_type != 'user' %}
+                        divSender = document.createElement("div");
+                        divSender.appendChild(document.createTextNode(data.user+':'));
+
+                    {% endif %}
+                    divMsg.className += "message other-message float-left";
+                    divTime.className += "message-data text-start";
+
+                } else {
+                    divMsg.className += "message my-message float-right";
+                    divTime.className += "message-data text-end";
+                }
+                msgTime = new Date(data.time);
+                spanTime.appendChild(document.createTextNode(msgTime.getHours() + ":" + (msgTime.getMinutes() < 10 ? '0' : '') + msgTime.getMinutes()));
+                divTime.appendChild(spanTime);
+                liItem.appendChild(divTime);
+                if (divSender!=null){
+                    liItem.appendChild(divSender);
+                }
+                if (data.msg_type === 'text') {
+                    divMsg.appendChild(document.createTextNode(data.message));
+                } else if (data.msg_type === 'poi'){
+                    let para = document.createElement("P");
+                    para.innerHTML = 'Point message:<br>' + data.name + ', ' + data.info +
+                        '<br><button type=\"button\" class=\"btn btn-orange\" onclick=\"parent.addChatPointFeature(\'' + data.name + '\',\'' + data.info + '\',\'' + data.lat + '\',\'' + data.long + '\',\'' + data.time + '\',\'' + data.user + '\');\">View on map</button>'
+                    divMsg.appendChild(para)
+                } else if (data.msg_type === 'route'){
+                    let para = document.createElement("P");
+                    let btn = document.createElement("Button");
+                    let new_geom = []
+                    let geom = Array.from(data.geom);
+                    for (let i = 0; i < geom.length; i++) {
+                        new_geom.push([geom[i][1], geom[i][0]]);
+                    }
+                    btn.addEventListener('click', () => parent.addChatRouteFeature(data.name, data.info, new_geom, data.time, data.user));
+                    btn.className += "btn btn-orange";
+                    btn.innerText = 'View on map';
+                    para.innerHTML = 'Route message:<br>' + data.name + ', ' + data.info + '<br>'
+                    para.appendChild(btn);
+                    divMsg.appendChild(para)
+                } else if (data.msg_type === 'image'){
+                    let para = document.createElement("P");
+                    // img element
+                    let img = document.createElement("img");
+                    img.src = data.url;
+                    img.alt = "image message";
+                    img.width = 175;
+                    // btn element
+                    let btn = document.createElement("Button");
+                    btn.addEventListener('click', () => parent.addChatPhotoFeature(data.url, data.detect_url, data.geom[0], data.geom[1], data.time, data.user));
+                    btn.className += "btn btn-orange";
+                    btn.innerText = 'View on map';
+                    para.innerHTML = 'Image message:<br>';
+                    para.appendChild(img);
+                    para.appendChild(btn);
+                    divMsg.appendChild(para)
+                }
+                liItem.appendChild(divMsg);
+                msgList.appendChild(liItem);
+                // scroll to the end of chat
+                chatElem.scrollTop = chatElem.scrollHeight - chatElem.clientHeight;
+                // move chat name to the top of chat list at the left
+                let chatNameLi = document.getElementById('chat_name_' + roomName);
+                let pa = chatNameLi.parentNode;
+                let sibs = pa.getElementsByTagName('li');
+                pa.insertBefore(chatNameLi, sibs[0]);
+            };
+
+            chatSocket.onclose = function (e) {
+                if (e.code === 1000){
+                    console.log('Chat socket closed');
+                } else {
+                    console.error('Chat socket closed unexpectedly');
+                }
+
+            };
+
+        }
+
+        document.querySelector('#chat-message-input').focus();
+        document.querySelector('#chat-message-input').onkeyup = function(e) {
+            if (e.keyCode === 13) {  // enter, return
+                document.querySelector('#chat-message-submit').click();
+            }
+        };
+
+        document.querySelector('#chat-message-submit').onclick = function(e) {
+            const messageInputDom = document.querySelector('#chat-message-input');
+            const message = messageInputDom.value;
+            if (message === '' || /^\s*$/.test(message)){
+                messageInputDom.value = '';
+                return;
+            }
+            let today = new Date();
+            let date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
+            let time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
+            chatSocket.send(JSON.stringify({
+                'message': message,
+                'mission_id': '{{mission_id}}',
+                'msg_type': 'text',
+                'time': date + ' ' + time,
+             }));
+            messageInputDom.value = '';
+        };
+
+        chatTxt = document.querySelector('#chat-message-input');
+
+        // function for change open chat - reload page with chat name as parameter
+        function openNewChat(newRoomName, type) {
+            window.location.href = window.location.href.replace( /[\?#].*|$/, "?chat-name=" + newRoomName )+'&chat-type='+type;
+        }
+
+        let backBtn = $("#back-btn");
+        backBtn.click( function () {
+            activeRoomName='';
+            if (chatSocket){
+                chatSocket.close(4000)
+            }
+
+            $(this).hide();
+            $(".chat").hide(400, function() {
+                $(".people-list").show();
+            })
+        });
+
+        // if there is no chats, switch to user list to create a new chat
+        if ("{{ has_chat }}" === 'True'){
+            // setup initial socket
+            socketSetup(socketUrl(roomName, roomType));
+        } else {
+            backBtn.click();
+        }
+
+    </script>
+    <script>
+        this.parent.alertSocket.onmessage= function(e) {
+            const data = JSON.parse(e.data);
+            let chat = document.getElementById(data['chat']);
+            if (chat == null){
+                window.location.reload();
+                return;
+             }
+            console.log(chat)
+
+            if (chat.id!==activeRoomName && chat.style.fontWeight !== 'bold') {
+                chat.style.fontWeight = 'bold';
+                unread_num=unread_num+1;
+             }
+            parent.setUnreadNum(unread_num)
+
+            if (unread_num>9){
+                document.getElementById('unread_num').textContent='9+'
+                parent.document.getElementById('unread_num').textContent='9+'
+             }else if (unread_num<1){
+                document.getElementById('unread_num').textContent='';
+                parent.document.getElementById('unread_num').textContent='';
+             }else {
+                document.getElementById('unread_num').textContent=unread_num
+                parent.document.getElementById('unread_num').textContent=unread_num
+             }
+        }
+
+        parent.document.getElementById('closeBTN').addEventListener("click", function() {
+          if (chatSocket){
+                chatSocket.close(4000)
+            }
+          backBtn.click()
+        })
+</script>
+</body>

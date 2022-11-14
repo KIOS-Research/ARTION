@@ -1,0 +1,15 @@
+{% load static %}
+<footer class="footer  fixed-bottom border-top bg-white">
+    <div class="container-fluid" style="padding-left: 100px; padding-right: 25px;">
+        <table class="table">
+            <tbody>
+                <tr>
+                    <td scope="col" class="float-end"><img  src="{% static 'img/kios_logo.png' %}" alt="KIOS logo" height="40" style="float: left;"></td>
+                    <td scope="col" class="text-muted align-middle">&#169; {% now "Y" %} KIOS Research and Innovation Center of Excellence</td>
+                    <td scope="col" class="float-end"><img  src="{% static 'img/eu_logo.jpg' %}" alt="EU logo" height="40" style="float: left;"></td>
+                    <td scope="col" class="text-muted align-middle">Funded by European Union Civil Protection (grant agreement 101017763)</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</footer>

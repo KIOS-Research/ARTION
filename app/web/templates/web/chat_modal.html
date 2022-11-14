@@ -1,0 +1,78 @@
+<button type="button" class="btn btn-civil-blue chat-btn"
+        onclick="loadChat()">
+    <span id="unread_num" style="display: inline"></span> <i class="fas fa-comments"></i>
+</button>
+<div class="chat-win" id="chat-window">
+    <a href="javascript:void(0)" id="closeBTN" class="chat-closebtn" onclick="closeChat()">&times;</a>
+    <iframe id="chat-frame" type="text/html" src="{% url 'chat:chat_index'  mission_id  %}" height="434px"></iframe>
+</div>
+<script>
+        let unread_num='';
+        document.getElementById('chat-window').style.display = 'block';
+        $( document ).ready(function() {
+            document.getElementById('closeBTN').click();
+        });
+
+        function socketAlertUrl(){
+            if ('{{ server_mode }}' === "True") {
+                return 'wss://'
+                + window.location.host
+                + '/artiontest/wss/alert'
+                {#+ '{{ user.username }}'#}
+                + '/{{mission_id}}/';
+            }
+            return 'ws://'
+                + window.location.host
+                + '/wss/alert'
+                {#+ '{{ user.username }}'#}
+                + '/{{mission_id}}/';
+        }
+
+        var alertSocket= new WebSocket(socketAlertUrl())
+
+        alertSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            unread_num=unread_num+1;
+            if(document.getElementById('chat-window').style.display !== 'block'){
+                if (unread_num>9){
+                    document.getElementById('unread_num').textContent='9+'
+                }else if (unread_num<1){
+                    document.getElementById('unread_num').textContent='';
+                }else {
+                    document.getElementById('unread_num').textContent=unread_num
+                }
+            }
+        }
+
+        //Notify when the websocket closes abruptly.
+        alertSocket.onclose = function() {
+            console.log('Alert WebSocket disconnected.');
+            //setTimeout(function(){startWebSocket(websocket_url)}, 5000);
+        }
+
+        function loadChat(){
+            if (document.getElementById('chat-window').style.display === 'none') {
+                document.getElementById('unread_num').style.display = 'none'
+                document.getElementById('chat-window').style.display = 'block';
+            } else {
+                document.getElementById('chat-window').style.display = 'none';
+                document.getElementById('unread_num').style.display = 'inline';
+            }
+        }
+
+        function closeChat(){
+            document.getElementById('chat-window').style.display = 'none';
+            document.getElementById('unread_num').style.display = 'inline';
+        }
+
+        function setUnreadNum(num){
+            unread_num=num;
+            if (unread_num>9){
+                document.getElementById('unread_num').textContent = '9+'
+            }else if (unread_num<1){
+                document.getElementById('unread_num').textContent = '';
+            }else {
+               document.getElementById('unread_num').textContent = unread_num;
+            }
+        }
+</script>
